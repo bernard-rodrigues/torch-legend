@@ -1,0 +1,32 @@
+body{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100vw;
+    height: 100vh;
+    background-color: black;
+}
+
+#container{
+    border: solid white 1px;
+    overflow: hidden;
+    position: relative;
+}
+
+#main-character{
+    aspect-ratio: 1/1;
+    position: absolute;
+    background-color: white;
+    overflow: visible;
+    border-radius: 50%;
+}
+
+#torch{
+    position: absolute;
+    aspect-ratio: 1/1;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background-image: radial-gradient(#ffffff7f, #ffffff00);
+    border-radius: 50%;
+}
