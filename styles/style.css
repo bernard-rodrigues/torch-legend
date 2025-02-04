@@ -30,3 +30,10 @@ body{
     background-image: radial-gradient(#ffffff7f, #ffffff00);
     border-radius: 50%;
 }
+
+.monster{
+    position: absolute;
+    height: 5px;
+    aspect-ratio: 1/1;
+    background-color: red;
+}

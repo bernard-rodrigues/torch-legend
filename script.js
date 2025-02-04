@@ -71,6 +71,28 @@ const updateContainer = (screenHeight, screenWidth) => {
     mainCharacter.style.left = `${heroPosition.x * scale}${unit}`;
 };
 
+const createMonsters = () => {
+    const monsters = Array.from({length: 5}, () => ({
+        x: Math.random() * HERO_POS_X_LIMIT,
+        y: Math.random() * HERO_POS_Y_LIMIT,
+        key: false
+    }));
+
+    monsters.forEach(monster => {
+        // Create a new div element for each monster
+        const monsterDiv = document.createElement('div');
+        
+        // Add a class to the monster div
+        monsterDiv.classList.add('monster');
+        
+        monsterDiv.style.left = `${monster.x}vh`;
+        monsterDiv.style.top = `${monster.y}vh`;
+
+        // Append the monster div to the container
+        container.appendChild(monsterDiv);
+    });
+}
+
 // Main game loop function
 const gameLoop = () => {
     moveCharacter(keys); // Update character position
@@ -80,6 +102,8 @@ const gameLoop = () => {
 
 // Event listener for when the page is fully loaded
 document.addEventListener("DOMContentLoaded", () => {
+    createMonsters()
+    
     // Start the main game loop
     requestAnimationFrame(gameLoop);
 
