@@ -1,12 +1,13 @@
 import {animateTorch, RELATIVE_TORCH_SIZE} from './vfx/vfx.js'
 
 // Constants defining various game element sizes
-const NUM_MONSTERS = 30;
+const NUM_MONSTERS = 50;
 const RELATIVE_CHARACTER_SIZE = 0.025; // Relative size of the main character
 
 // DOM elements
 const container = document.getElementById("container");
 const mainCharacter = document.getElementById("main-character");
+const gameover = document.getElementById("game-over");
 
 // Limits for character movement within the game world
 const HERO_POS_X_MAX_LIMIT = 130.5;
@@ -77,6 +78,19 @@ const moveMonster = (monster, containerHeight) => {
     monster.y = Math.max(0, Math.min(HERO_POS_Y_MAX_LIMIT + (containerHeight*RELATIVE_CHARACTER_SIZE)/2, newY));
 }
 
+const idleMonsterMovement = (monster) => {
+    if (Math.random() < 0.98) return; // Only move occasionally (2% chance per frame)
+
+    const idleStep = 0.2; // Small movement range
+    const angle = Math.random() * Math.PI * 2; // Random direction
+
+    const dx = Math.cos(angle) * idleStep;
+    const dy = Math.sin(angle) * idleStep;
+
+    monster.x = Math.max(0, Math.min(HERO_POS_X_MAX_LIMIT, monster.x + dx));
+    monster.y = Math.max(0, Math.min(HERO_POS_Y_MAX_LIMIT, monster.y + dy));
+};
+
 const isCloseToHero = (monster) => {
     const height = window.innerWidth >= (4/3)*window.innerHeight ? 100 : 100*(3/4);
     const distance = Math.sqrt((monster.x - heroPosition.x)**2 + (monster.y - heroPosition.y)**2);
@@ -104,12 +118,16 @@ const updateContainer = () => {
     monsters.forEach((monster, index) => {
         if(isCloseToHero(monster)){
             moveMonster(monster, containerHeight);
+        }else {
+            idleMonsterMovement(monster);
         }
         const monsterDiv = monsterDivs[index];
-        monsterDiv.style.height = `${containerHeight * RELATIVE_CHARACTER_SIZE / 2}${unit}`;
+        monsterDiv.style.height = `${containerHeight * RELATIVE_CHARACTER_SIZE * 2}${unit}`;
         monsterDiv.style.left = `${monster.x * scale + (containerHeight * RELATIVE_CHARACTER_SIZE)/4}${unit}`;
         monsterDiv.style.top = `${monster.y * scale + (containerHeight * RELATIVE_CHARACTER_SIZE)/4}${unit}`;
-        monsterDiv.style.backgroundColor = monster.key ? 'blue' : 'red';
+        monsterDiv.style.backgroundImage = monster.key ? "url('./assets/key.png')" : "url('./assets/monster.png')";
+        // Smooth animation using CSS transition
+        // monsterDiv.style.transition = "top 0.3s ease-in-out, left 0.3s ease-in-out";
     });
 };
 
@@ -143,11 +161,32 @@ const createMonsters = () => {
     });
 }
 
+const checkCollision = () => {
+    const height = window.innerWidth >= (4/3)*window.innerHeight ? 100 : 100*(3/4);
+    const heroSize = RELATIVE_CHARACTER_SIZE * height;
+    const monsterSize = (RELATIVE_CHARACTER_SIZE / 2) * height;
+    
+    for (const monster of monsters) {
+        const distance = Math.sqrt((monster.x - heroPosition.x) ** 2 + (monster.y - heroPosition.y) ** 2);
+        if (distance < (heroSize + monsterSize) / 2) {
+            return monster; // Retorna o monstro com o qual houve colisão
+        }
+    }
+    return null; // Nenhuma colisão
+};
+
 // Main game loop function
 const gameLoop = () => {
     moveCharacter(keys); // Update character position
     updateContainer(); // Adjust screen elements
-    requestAnimationFrame(gameLoop); // Continue the loop
+    
+    const collidedMonster = checkCollision();
+    if(!collidedMonster){
+        requestAnimationFrame(gameLoop); // Continue the loop
+    }else{
+        gameover.style.display = "block";
+        gameover.innerText = collidedMonster.key ? "You won!" : "You lose...";
+    }
 };
 
 // Event listener for when the page is fully loaded
