@@ -1,8 +1,11 @@
 import {animateTorch, RELATIVE_TORCH_SIZE} from './vfx/vfx.js'
 
 // Constants defining various game element sizes
-const NUM_MONSTERS = 50;
+const NUM_MONSTERS = 100;
 const RELATIVE_CHARACTER_SIZE = 0.025; // Relative size of the main character
+
+const ZOOM_INTENSITY = 1.1; // Adjust this value to control the zoom level
+const CAMERA_SHIFT_FACTOR = 0.05; // Controls how much the camera follows the main character
 
 // DOM elements
 const container = document.getElementById("container");
@@ -105,6 +108,8 @@ const updateContainer = () => {
     const unit = isWider ? "vh" : "vw";
     const scale = isWider ? 1 : 3 / 4;
 
+    let monsterNearby = false; // Track if any monster is close
+
     // Update container size
     container.style.height = `${containerHeight}${unit}`;
     container.style.width = isWider ? `${containerHeight * (4 / 3)}vh` : "100vw";
@@ -116,19 +121,28 @@ const updateContainer = () => {
 
     // Update monsters positions
     monsters.forEach((monster, index) => {
+        const monsterDiv = monsterDivs[index];
+
         if(isCloseToHero(monster)){
             moveMonster(monster, containerHeight);
+            monsterNearby = true; // A monster is close, trigger zoom-in effect
         }else {
             idleMonsterMovement(monster);
         }
-        const monsterDiv = monsterDivs[index];
         monsterDiv.style.height = `${containerHeight * RELATIVE_CHARACTER_SIZE * 2}${unit}`;
         monsterDiv.style.left = `${monster.x * scale + (containerHeight * RELATIVE_CHARACTER_SIZE)/4}${unit}`;
         monsterDiv.style.top = `${monster.y * scale + (containerHeight * RELATIVE_CHARACTER_SIZE)/4}${unit}`;
         monsterDiv.style.backgroundImage = monster.key ? "url('./assets/key.png')" : "url('./assets/monster.png')";
-        // Smooth animation using CSS transition
-        // monsterDiv.style.transition = "top 0.3s ease-in-out, left 0.3s ease-in-out";
     });
+
+    // Apply zoom-in effect and make the camera follow the main character
+    if (monsterNearby) {
+        container.style.transition = "transform 0.3s ease-in";
+        container.style.transform = `scale(${ZOOM_INTENSITY}) translate(${-heroPosition.x * CAMERA_SHIFT_FACTOR}vw, ${-heroPosition.y * CAMERA_SHIFT_FACTOR}vh)`;
+    } else {
+        container.style.transition = "transform 0.5s ease-out";
+        container.style.transform = `scale(1.0) translate(0, 0)`;
+    }
 };
 
 const createMonsters = () => {
