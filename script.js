@@ -1,16 +1,18 @@
-import {animateTorch} from './vfx/vfx.js'
+import {animateTorch, RELATIVE_TORCH_SIZE} from './vfx/vfx.js'
 
 // Constants defining various game element sizes
-const CHARACTERSIZE = 0.025; // Relative size of the main character
+const NUM_MONSTERS = 30;
+const RELATIVE_CHARACTER_SIZE = 0.025; // Relative size of the main character
 
 // DOM elements
 const container = document.getElementById("container");
 const mainCharacter = document.getElementById("main-character");
 
 // Limits for character movement within the game world
-const HERO_POS_X_LIMIT = 130.5;
-const HERO_POS_Y_LIMIT = 97.1;
+const HERO_POS_X_MAX_LIMIT = 130.5;
+const HERO_POS_Y_MAX_LIMIT = 97.1;
 const STEP = 0.1; // Movement step size
+const SAFE_START_DISTANCE = HERO_POS_X_MAX_LIMIT * 0.25;
 
 // Initial character position
 let heroPosition = {
@@ -33,6 +35,9 @@ let keys = {
     space: false
 };
 
+let monsters = [];
+let monsterDivs = []
+
 // Function to move the character based on pressed keys
 const moveCharacter = (keys) => {
     let dx = 0, dy = 0;
@@ -50,36 +55,106 @@ const moveCharacter = (keys) => {
     }
 
     // Ensure movement stays within game boundaries
-    heroPosition.x = Math.max(0, Math.min(HERO_POS_X_LIMIT, heroPosition.x + dx));
-    heroPosition.y = Math.max(0, Math.min(HERO_POS_Y_LIMIT, heroPosition.y + dy));
+    heroPosition.x = Math.max(0, Math.min(HERO_POS_X_MAX_LIMIT, heroPosition.x + dx));
+    heroPosition.y = Math.max(0, Math.min(HERO_POS_Y_MAX_LIMIT, heroPosition.y + dy));
 };
 
+const moveMonster = (monster, containerHeight) => {
+    const angle = Math.atan2(heroPosition.y - monster.y, heroPosition.x - monster.x);
+
+    const vect = monster.key ? -1 : 1;
+    const speedFactor = monster.key ? 0.75 : 0.5;
+
+    const dx = Math.cos(angle) * STEP * speedFactor;
+    const dy = Math.sin(angle) * STEP * speedFactor;
+
+    // Calculate new positions
+    const newX = monster.x + dx * vect;
+    const newY = monster.y + dy * vect;
+
+    // Clamp the new positions within game limits
+    monster.x = Math.max(0, Math.min(HERO_POS_X_MAX_LIMIT + (containerHeight*RELATIVE_CHARACTER_SIZE)/2, newX));
+    monster.y = Math.max(0, Math.min(HERO_POS_Y_MAX_LIMIT + (containerHeight*RELATIVE_CHARACTER_SIZE)/2, newY));
+}
+
+const isCloseToHero = (monster) => {
+    const height = window.innerWidth >= (4/3)*window.innerHeight ? 100 : 100*(3/4);
+    const distance = Math.sqrt((monster.x - heroPosition.x)**2 + (monster.y - heroPosition.y)**2);
+    
+    return distance < RELATIVE_TORCH_SIZE*height*0.60;
+}
+
 // Function to update container and character sizes based on screen size
-const updateContainer = (screenHeight, screenWidth) => {
-    const isWider = screenWidth >= (4 / 3) * screenHeight;
-    const height = isWider ? 100 : 100 * (3 / 4);
+const updateContainer = () => {
+    const isWider = window.innerWidth >= (4 / 3) * window.innerHeight;
+    const containerHeight = isWider ? 100 : 100 * (3 / 4);
     const unit = isWider ? "vh" : "vw";
     const scale = isWider ? 1 : 3 / 4;
 
     // Update container size
-    container.style.height = `${height}${unit}`;
-    container.style.width = isWider ? `${height * (4 / 3)}vh` : "100vw";
+    container.style.height = `${containerHeight}${unit}`;
+    container.style.width = isWider ? `${containerHeight * (4 / 3)}vh` : "100vw";
 
     // Update character position and size
-    mainCharacter.style.height = `${height * CHARACTERSIZE}${unit}`;
-    mainCharacter.style.top = `${heroPosition.y * scale}${unit}`;
-    mainCharacter.style.left = `${heroPosition.x * scale}${unit}`;
+    mainCharacter.style.height = `${containerHeight * RELATIVE_CHARACTER_SIZE}${unit}`;
+    mainCharacter.style.top = `${heroPosition.y * scale + (containerHeight * RELATIVE_CHARACTER_SIZE)/2}${unit}`;
+    mainCharacter.style.left = `${heroPosition.x * scale + (containerHeight * RELATIVE_CHARACTER_SIZE)/2}${unit}`;
+
+    // Update monsters positions
+    monsters.forEach((monster, index) => {
+        if(isCloseToHero(monster)){
+            moveMonster(monster, containerHeight);
+        }
+        const monsterDiv = monsterDivs[index];
+        monsterDiv.style.height = `${containerHeight * RELATIVE_CHARACTER_SIZE / 2}${unit}`;
+        monsterDiv.style.left = `${monster.x * scale + (containerHeight * RELATIVE_CHARACTER_SIZE)/4}${unit}`;
+        monsterDiv.style.top = `${monster.y * scale + (containerHeight * RELATIVE_CHARACTER_SIZE)/4}${unit}`;
+        monsterDiv.style.backgroundColor = monster.key ? 'blue' : 'red';
+    });
 };
+
+const createMonsters = () => {
+    monsters = Array.from({length: NUM_MONSTERS}, () => {
+        let x, y;
+
+        do {
+            x = Math.random() * HERO_POS_X_MAX_LIMIT;
+            y = Math.random() * HERO_POS_Y_MAX_LIMIT;
+        } while (Math.sqrt(x ** 2 + y ** 2) < SAFE_START_DISTANCE); // Ensure it's not too close
+    
+        return { x, y, key: false };
+    });
+
+    // Select one random monster index before generating the array
+    const keyMonsterIndex = Math.floor(Math.random() * NUM_MONSTERS);
+
+    monsters[keyMonsterIndex].key = true;
+
+    monsterDivs = monsters.map(() => {
+        // Create a new div element for each monster
+        const div = document.createElement('div');
+        
+        // Add a class to the monster div
+        div.classList.add('monster');
+
+        // Append the monster div to the container
+        container.appendChild(div);
+        return div;
+    });
+}
 
 // Main game loop function
 const gameLoop = () => {
     moveCharacter(keys); // Update character position
-    updateContainer(window.innerHeight, window.innerWidth); // Adjust screen elements
+    updateContainer(); // Adjust screen elements
     requestAnimationFrame(gameLoop); // Continue the loop
 };
 
 // Event listener for when the page is fully loaded
 document.addEventListener("DOMContentLoaded", () => {
+    // Create monsters in the map
+    createMonsters();
+    
     // Start the main game loop
     requestAnimationFrame(gameLoop);
 
