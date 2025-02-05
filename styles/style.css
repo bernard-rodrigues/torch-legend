@@ -19,6 +19,7 @@ body{
     background-color: white;
     overflow: visible;
     border-radius: 50%;
+    transform: translate(-50%, -50%); /* Move the origin to the center */
 }
 
 #torch{
@@ -33,7 +34,7 @@ body{
 
 .monster{
     position: absolute;
-    height: 5px;
     aspect-ratio: 1/1;
-    background-color: red;
+    border-radius: 50%;
+    transform: translate(-50%, -50%); /* Move the origin to the center */
 }
