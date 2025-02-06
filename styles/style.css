@@ -13,11 +13,60 @@ body{
     overflow: hidden;
 }
 
+#menu{
+    height: 100vh;
+    width: 100vw;
+    position: relative;
+}
+
+#menu div{
+    text-align: center;
+    width: fit-content;
+    position: absolute;
+    left: 50%;
+    top: 10%;
+    transform: translateX(-50%);
+}
+
+#menu div h1{
+    color: white;
+    font-size: 4rem;
+}
+
+#menu div h2{
+    font-family: "Roboto", serif;
+    font-size: 0.75rem;
+    font-weight: 200;
+    color: white;
+}
+
+#start{
+    position: absolute;
+    bottom: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+#art{
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: auto;
+    transform: translateY(30%);
+    /* Apply transparency to the top and right side */
+    -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 1), 40%, rgba(0, 0, 0, 0));
+    -webkit-mask-composite: destination-in;
+    
+    mask-image: linear-gradient(to top, rgba(0, 0, 0, 1), 40%, rgba(0, 0, 0, 0));
+    mask-composite: intersect;
+    z-index: 0;
+}
+
 #container{
     border: solid white 1px;
     overflow: hidden;
     position: relative;
-    /* display: none; */
 }
 
 #main-character{
@@ -64,10 +113,11 @@ body{
     gap: 0.5rem;
 }
 
-#button{
+#button, #start{
     background-color: white;
     color: black;
     padding: 0 1rem;
     font-family: "Roboto", serif;
     font-size: 1rem;
+    z-index: 100;
 }
