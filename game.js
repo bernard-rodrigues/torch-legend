@@ -2,7 +2,9 @@ import { HERO_POS_X_MAX_LIMIT, HERO_POS_Y_MAX_LIMIT, STEP, SAFE_START_DISTANCE, 
 import { MESSAGES } from './modules/messages.js';
 import {animateTorch, RELATIVE_TORCH_SIZE} from './vfx/vfx.js';
 
-// DOM elements
+/**
+ * Game DOM Elements
+ */
 const menu = document.getElementById("menu");
 const container = document.getElementById("container");
 const mainCharacter = document.getElementById("main-character");
@@ -11,27 +13,31 @@ const message = document.getElementById("message");
 const button = document.getElementById("button");
 const start = document.getElementById("start");
 
-// Initial character position
+/**
+ * Initial character position (randomized within game boundaries)
+ */
 let heroPosition = {
     x: Math.random() * HERO_POS_X_MAX_LIMIT,
     y: Math.random() * HERO_POS_Y_MAX_LIMIT
 };
 
+// Initial game variables
 let num_monsters = 1;
 let zoom = 2;
 let zoomSpeed = 0.001;
 
-/* 
-0: in game; 
-1: tutorial message 1;
-2: tutorial message 2; 
-3: tutorial message 3;
-4: win;
-5: lose;
-*/
+/**
+ * Game state definitions:
+ * 0: In-game
+ * 1-3: Tutorial messages
+ * 4: Win
+ * 5: Lose
+ */
 let gameState = 0;
 
-// Object storing key states (pressed or not)
+/**
+ * Object to track keypress states
+ */
 let keys = {
     keyW: false,
     keyS: false,
@@ -46,10 +52,14 @@ let keys = {
     space: false
 };
 
+// Arrays for storing monsters and their DOM elements
 let monsters = [];
 let monsterDivs = []
 
-// Function to move the character based on pressed keys
+/**
+ * Moves the main character based on key inputs
+ * @param {Object} keys - Object containing key states
+ */
 const moveCharacter = (keys) => {
     let dx = 0, dy = 0;
 
@@ -71,29 +81,35 @@ const moveCharacter = (keys) => {
         dy /= Math.sqrt(2);
     }
 
-    // Ensure movement stays within game boundaries
+    // Keep character within bounds
     heroPosition.x = Math.max(0, Math.min(HERO_POS_X_MAX_LIMIT, heroPosition.x + dx));
     heroPosition.y = Math.max(0, Math.min(HERO_POS_Y_MAX_LIMIT, heroPosition.y + dy));
 };
 
+/**
+ * Moves a monster towards or away from the hero based on its properties
+ * @param {Object} monster - Monster object with position and key status
+ * @param {number} containerHeight - Height of the game container
+ */
 const moveMonster = (monster, containerHeight) => {
     const angle = Math.atan2(heroPosition.y - monster.y, heroPosition.x - monster.x);
-
     const vect = monster.key ? -1 : 1;
     const speedFactor = monster.key ? 0.75 : 0.5;
 
     const dx = Math.cos(angle) * STEP * speedFactor;
     const dy = Math.sin(angle) * STEP * speedFactor;
 
-    // Calculate new positions
     const newX = monster.x + dx * vect;
     const newY = monster.y + dy * vect;
 
-    // Clamp the new positions within game limits
     monster.x = Math.max(0, Math.min(HERO_POS_X_MAX_LIMIT + (containerHeight*RELATIVE_CHARACTER_SIZE)/2, newX));
     monster.y = Math.max(0, Math.min(HERO_POS_Y_MAX_LIMIT + (containerHeight*RELATIVE_CHARACTER_SIZE)/2, newY));
 }
 
+/**
+ * Moves a monster randomly when idle
+ * @param {Object} monster - Monster object with position
+ */
 const idleMonsterMovement = (monster) => {
     if (Math.random() < 0.98) return; // Only move occasionally (2% chance per frame)
 
@@ -107,6 +123,11 @@ const idleMonsterMovement = (monster) => {
     monster.y = Math.max(0, Math.min(HERO_POS_Y_MAX_LIMIT, monster.y + dy));
 };
 
+/**
+ * Determines if a monster is near the hero
+ * @param {Object} monster - Monster object with position
+ * @returns {boolean} - True if the monster is within a certain distance of the hero
+ */
 const isCloseToHero = (monster) => {
     const height = window.innerWidth >= (4/3)*window.innerHeight ? 100 : 100*(3/4);
     const distance = Math.sqrt((monster.x - heroPosition.x)**2 + (monster.y - heroPosition.y)**2);
@@ -114,7 +135,9 @@ const isCloseToHero = (monster) => {
     return distance < RELATIVE_TORCH_SIZE*height*0.60;
 }
 
-// Function to update container and character sizes based on screen size
+/**
+ * Updates game elements based on screen size and game logic
+ */
 const updateContainer = () => {
     const isWider = window.innerWidth >= (4 / 3) * window.innerHeight;
     const containerHeight = isWider ? 100 : 100 * (3 / 4);
@@ -155,6 +178,9 @@ const updateContainer = () => {
     });
 };
 
+/**
+ * Creates and initializes monsters on the map
+ */
 const createMonsters = () => {
     monsterDivs.forEach(monsterDiv => {
         monsterDiv.remove(); // Remove each element
@@ -189,6 +215,10 @@ const createMonsters = () => {
     });
 }
 
+/**
+ * Checks for collisions between the hero and monsters
+ * @returns {Object|null} - The monster object if a collision occurs, otherwise null
+ */
 const checkCollision = () => {
     const height = window.innerWidth >= (4/3)*window.innerHeight ? 100 : 100*(3/4);
     const heroSize = RELATIVE_CHARACTER_SIZE * height;
@@ -203,7 +233,9 @@ const checkCollision = () => {
     return null; // Nenhuma colisão
 };
 
-// Main game loop function
+/**
+ * Main game loop
+ */
 const gameLoop = () => {
     if(gameState === 0){
         container.style.display = "none";
@@ -294,9 +326,6 @@ const setupEventListeners = () => {
 
 // Event listener for when the page is fully loaded
 document.addEventListener("DOMContentLoaded", () => {
-    // Create monsters in the map
-    createMonsters();
-    
     requestAnimationFrame(gameLoop);
 
     // Animate the torch at a fixed interval of 100ms
