@@ -4,9 +4,6 @@ import {animateTorch, RELATIVE_TORCH_SIZE} from './vfx/vfx.js'
 const NUM_MONSTERS = 100;
 const RELATIVE_CHARACTER_SIZE = 0.025; // Relative size of the main character
 
-const ZOOM_INTENSITY = 1.1; // Adjust this value to control the zoom level
-const CAMERA_SHIFT_FACTOR = 0.05; // Controls how much the camera follows the main character
-
 // DOM elements
 const container = document.getElementById("container");
 const mainCharacter = document.getElementById("main-character");
@@ -23,6 +20,9 @@ let heroPosition = {
     x: 0,
     y: 0
 };
+
+let zoom = 1;
+let zoomSpeed = 0.001;
 
 // Object storing key states (pressed or not)
 let keys = {
@@ -108,16 +108,23 @@ const updateContainer = () => {
     const unit = isWider ? "vh" : "vw";
     const scale = isWider ? 1 : 3 / 4;
 
-    let monsterNearby = false; // Track if any monster is close
-
     // Update container size
     container.style.height = `${containerHeight}${unit}`;
     container.style.width = isWider ? `${containerHeight * (4 / 3)}vh` : "100vw";
+    container.style.transformOrigin = `${(heroPosition.x/HERO_POS_X_MAX_LIMIT)*100}% ${(heroPosition.y/HERO_POS_Y_MAX_LIMIT)*100}%`;
+    container.style.transform = `scale(${zoom})`;
 
     // Update character position and size
     mainCharacter.style.height = `${containerHeight * RELATIVE_CHARACTER_SIZE}${unit}`;
     mainCharacter.style.top = `${heroPosition.y * scale + (containerHeight * RELATIVE_CHARACTER_SIZE)/2}${unit}`;
     mainCharacter.style.left = `${heroPosition.x * scale + (containerHeight * RELATIVE_CHARACTER_SIZE)/2}${unit}`;
+
+    let shouldZoomIn = monsters.some(isCloseToHero);
+    if (shouldZoomIn) {
+        zoom += zoomSpeed;
+    } else {
+        zoom = zoom > 1 ? zoom - zoomSpeed * 5 : 1;
+    }
 
     // Update monsters positions
     monsters.forEach((monster, index) => {
@@ -125,7 +132,6 @@ const updateContainer = () => {
 
         if(isCloseToHero(monster)){
             moveMonster(monster, containerHeight);
-            monsterNearby = true; // A monster is close, trigger zoom-in effect
         }else {
             idleMonsterMovement(monster);
         }
@@ -134,15 +140,6 @@ const updateContainer = () => {
         monsterDiv.style.top = `${monster.y * scale + (containerHeight * RELATIVE_CHARACTER_SIZE)/4}${unit}`;
         monsterDiv.style.backgroundImage = monster.key ? "url('./assets/key.png')" : "url('./assets/monster.png')";
     });
-
-    // Apply zoom-in effect and make the camera follow the main character
-    if (monsterNearby) {
-        container.style.transition = "transform 0.3s ease-in";
-        container.style.transform = `scale(${ZOOM_INTENSITY}) translate(${-heroPosition.x * CAMERA_SHIFT_FACTOR}vw, ${-heroPosition.y * CAMERA_SHIFT_FACTOR}vh)`;
-    } else {
-        container.style.transition = "transform 0.5s ease-out";
-        container.style.transform = `scale(1.0) translate(0, 0)`;
-    }
 };
 
 const createMonsters = () => {
@@ -199,21 +196,11 @@ const gameLoop = () => {
         requestAnimationFrame(gameLoop); // Continue the loop
     }else{
         gameover.style.display = "block";
-        gameover.innerText = collidedMonster.key ? "You won!" : "You lose...";
+        gameover.innerText = collidedMonster.key ? "You got the key!" : "You got caught...";
     }
 };
 
-// Event listener for when the page is fully loaded
-document.addEventListener("DOMContentLoaded", () => {
-    // Create monsters in the map
-    createMonsters();
-    
-    // Start the main game loop
-    requestAnimationFrame(gameLoop);
-
-    // Animate the torch at a fixed interval of 100ms
-    setInterval(() => animateTorch(window.innerHeight, window.innerWidth), 100);
-
+const setupEventListeners = () => {
     // Listen for key press events
     addEventListener("keydown", (event) => {
         switch(event.code) {
@@ -243,4 +230,18 @@ document.addEventListener("DOMContentLoaded", () => {
             case 'Space': keys.space = false; break;
         }
     });
+}
+
+// Event listener for when the page is fully loaded
+document.addEventListener("DOMContentLoaded", () => {
+    // Create monsters in the map
+    createMonsters();
+    
+    // Start the main game loop
+    requestAnimationFrame(gameLoop);
+
+    // Animate the torch at a fixed interval of 100ms
+    setInterval(() => animateTorch(window.innerHeight, window.innerWidth), 100);
+
+    setupEventListeners();
 });
