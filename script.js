@@ -66,8 +66,14 @@ const moveCharacter = (keys) => {
     // Determine movement direction
     if (keys.keyW || keys.arrowUp) dy -= STEP;
     if (keys.keyS || keys.arrowDown) dy += STEP;
-    if (keys.keyA || keys.arrowLeft) dx -= STEP;
-    if (keys.keyD || keys.arrowRight) dx += STEP;
+    if (keys.keyA || keys.arrowLeft){
+        dx -= STEP;
+        mainCharacter.style.transform = "translate(-50%, -50%) scaleX(-1)"
+    }
+    if (keys.keyD || keys.arrowRight){
+        dx += STEP;
+        mainCharacter.style.transform = "translate(-50%, -50%) scaleX(1)"
+    }
 
     // Normalize diagonal movement
     if (dx !== 0 && dy !== 0) {
@@ -152,7 +158,7 @@ const updateContainer = () => {
         }else {
             idleMonsterMovement(monster);
         }
-        monsterDiv.style.height = `${containerHeight * RELATIVE_CHARACTER_SIZE * 2}${unit}`;
+        monsterDiv.style.height = `${containerHeight * RELATIVE_CHARACTER_SIZE * 1.5}${unit}`;
         monsterDiv.style.left = `${monster.x * scale + (containerHeight * RELATIVE_CHARACTER_SIZE)/4}${unit}`;
         monsterDiv.style.top = `${monster.y * scale + (containerHeight * RELATIVE_CHARACTER_SIZE)/4}${unit}`;
         monsterDiv.style.backgroundImage = monster.key ? "url('./assets/key.png')" : "url('./assets/monster.png')";
