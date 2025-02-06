@@ -1,28 +1,45 @@
+import { MESSAGES } from './messages.js';
 import {animateTorch, RELATIVE_TORCH_SIZE} from './vfx/vfx.js'
 
 // Constants defining various game element sizes
-const NUM_MONSTERS = 100;
 const RELATIVE_CHARACTER_SIZE = 0.025; // Relative size of the main character
 
 // DOM elements
 const container = document.getElementById("container");
 const mainCharacter = document.getElementById("main-character");
-const gameover = document.getElementById("game-over");
+const messages = document.getElementById("messages");
+const message = document.getElementById("message");
+const button = document.getElementById("button");
 
 // Limits for character movement within the game world
 const HERO_POS_X_MAX_LIMIT = 130.5;
 const HERO_POS_Y_MAX_LIMIT = 97.1;
 const STEP = 0.1; // Movement step size
+
+// Prevent monsters from spawn next to hero
 const SAFE_START_DISTANCE = HERO_POS_X_MAX_LIMIT * 0.25;
+
+const NEW_MONSTER_SPAWNING = 5;
 
 // Initial character position
 let heroPosition = {
-    x: 0,
-    y: 0
+    x: Math.random() * HERO_POS_X_MAX_LIMIT,
+    y: Math.random() * HERO_POS_Y_MAX_LIMIT
 };
 
-let zoom = 1;
+let num_monsters = 1;
+let zoom = 2;
 let zoomSpeed = 0.001;
+
+/* 
+0: in game; 
+1: tutorial message 1;
+2: tutorial message 2; 
+3: tutorial message 3;
+4: win;
+5: lose;
+*/
+let gameState = 1;
 
 // Object storing key states (pressed or not)
 let keys = {
@@ -143,19 +160,23 @@ const updateContainer = () => {
 };
 
 const createMonsters = () => {
-    monsters = Array.from({length: NUM_MONSTERS}, () => {
+    monsterDivs.forEach(monsterDiv => {
+        monsterDiv.remove(); // Remove each element
+    });
+    
+    monsters = Array.from({length: num_monsters}, () => {
         let x, y;
 
         do {
             x = Math.random() * HERO_POS_X_MAX_LIMIT;
             y = Math.random() * HERO_POS_Y_MAX_LIMIT;
-        } while (Math.sqrt(x ** 2 + y ** 2) < SAFE_START_DISTANCE); // Ensure it's not too close
+        } while (Math.sqrt((heroPosition.x - x) ** 2 + (heroPosition.y - y) ** 2) < SAFE_START_DISTANCE); // Ensure it's not too close to hero
     
         return { x, y, key: false };
     });
 
     // Select one random monster index before generating the array
-    const keyMonsterIndex = Math.floor(Math.random() * NUM_MONSTERS);
+    const keyMonsterIndex = Math.floor(Math.random() * num_monsters);
 
     monsters[keyMonsterIndex].key = true;
 
@@ -188,19 +209,53 @@ const checkCollision = () => {
 
 // Main game loop function
 const gameLoop = () => {
-    moveCharacter(keys); // Update character position
-    updateContainer(); // Adjust screen elements
-    
-    const collidedMonster = checkCollision();
-    if(!collidedMonster){
-        requestAnimationFrame(gameLoop); // Continue the loop
-    }else{
-        gameover.style.display = "block";
-        gameover.innerText = collidedMonster.key ? "You got the key!" : "You got caught...";
+    if (gameState >= 1 && gameState <= 5) {
+        container.style.display = "none";
+        messages.style.display = "flex";
+        message.innerText = MESSAGES[`tutorial${gameState}`] || MESSAGES[gameState === 4 ? 'win' : 'lose'];
+    } else {
+        container.style.display = "block";
+        messages.style.display = "none";
+        moveCharacter(keys);
+        updateContainer();
+        const collidedMonster = checkCollision();
+        if (collidedMonster) {
+            gameState = collidedMonster.key ? 4 : 5;
+        }
     }
+    requestAnimationFrame(gameLoop);
 };
 
+const reset_game = (new_num_monsters) => {
+    num_monsters = new_num_monsters;
+    zoom = 2;
+    heroPosition.x = Math.random() * HERO_POS_X_MAX_LIMIT;
+    heroPosition.y = Math.random() * HERO_POS_Y_MAX_LIMIT;
+    createMonsters()
+    gameState = 0;
+}
+
+const handleButtonClick = () => {
+    if(gameState === 1){
+        gameState = 2;
+    }else if(gameState === 2){
+        reset_game(1);
+    }else if(gameState === 3){
+        reset_game(num_monsters*NEW_MONSTER_SPAWNING);
+    }else if(gameState === 4){
+        if(num_monsters === 1){
+            gameState = 3;
+        }else{
+            reset_game(num_monsters+NEW_MONSTER_SPAWNING);
+        }
+    }else if(gameState === 5){
+        gameState = 1;
+    }
+}
+
 const setupEventListeners = () => {
+    button.addEventListener("click", handleButtonClick)
+    
     // Listen for key press events
     addEventListener("keydown", (event) => {
         switch(event.code) {
@@ -237,7 +292,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // Create monsters in the map
     createMonsters();
     
-    // Start the main game loop
     requestAnimationFrame(gameLoop);
 
     // Animate the torch at a fixed interval of 100ms
