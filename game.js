@@ -1,4 +1,12 @@
-import { HERO_POS_X_MAX_LIMIT, HERO_POS_Y_MAX_LIMIT, STEP, SAFE_START_DISTANCE, NEW_MONSTER_SPAWNING, RELATIVE_CHARACTER_SIZE } from './modules/constants.js';
+import {
+    HERO_POS_X_MAX_LIMIT,
+    HERO_POS_Y_MAX_LIMIT,
+    STEP,
+    SAFE_START_DISTANCE,
+    NEW_MONSTER_SPAWNING,
+    RELATIVE_CHARACTER_SIZE,
+    TOUCH_DEAD_ZONE
+} from './modules/constants.js';
 import { MESSAGES } from './modules/messages.js';
 import {animateTorch, RELATIVE_TORCH_SIZE} from './vfx/vfx.js';
 
@@ -6,6 +14,8 @@ import {animateTorch, RELATIVE_TORCH_SIZE} from './vfx/vfx.js';
  * Game DOM Elements
  */
 const menu = document.getElementById("menu");
+const keysContainer = document.getElementById("keys-container");
+const keyCounter = document.getElementById("key-counter");
 const container = document.getElementById("container");
 const mainCharacter = document.getElementById("main-character");
 const messages = document.getElementById("messages");
@@ -52,9 +62,16 @@ let keys = {
     space: false
 };
 
+let touchStart = { x: 0, y: 0 };
+let touchDirection = { x: 0, y: 0 };
+let touchActive = false;
+
 // Arrays for storing monsters and their DOM elements
 let monsters = [];
 let monsterDivs = []
+
+// Total of keys grabbed by the user
+let keyCounting = 0;
 
 /**
  * Moves the main character based on key inputs
@@ -64,13 +81,13 @@ const moveCharacter = (keys) => {
     let dx = 0, dy = 0;
 
     // Determine movement direction
-    if (keys.keyW || keys.arrowUp) dy -= STEP;
-    if (keys.keyS || keys.arrowDown) dy += STEP;
-    if (keys.keyA || keys.arrowLeft){
+    if (keys.keyW || keys.arrowUp || touchDirection.y === -1) dy -= STEP;
+    if (keys.keyS || keys.arrowDown || touchDirection.y === 1) dy += STEP;
+    if (keys.keyA || keys.arrowLeft || touchDirection.x === -1){
         dx -= STEP;
         mainCharacter.style.transform = "translate(-50%, -50%) scaleX(-1)"
     }
-    if (keys.keyD || keys.arrowRight){
+    if (keys.keyD || keys.arrowRight || touchDirection.x === 1){
         dx += STEP;
         mainCharacter.style.transform = "translate(-50%, -50%) scaleX(1)"
     }
@@ -149,6 +166,13 @@ const updateContainer = () => {
     container.style.width = isWider ? `${containerHeight * (4 / 3)}vh` : "100vw";
     container.style.transformOrigin = `${(heroPosition.x/HERO_POS_X_MAX_LIMIT)*100}% ${(heroPosition.y/HERO_POS_Y_MAX_LIMIT)*100}%`;
     container.style.transform = `scale(${zoom})`;
+
+    //
+    keysContainer.style.top = `${scale}${unit}`;
+    keysContainer.style.left = `${scale}${unit}`;
+    
+    // Update key counter
+    keyCounter.innerText = `x${keyCounting}`;
 
     // Update character position and size
     mainCharacter.style.height = `${containerHeight * RELATIVE_CHARACTER_SIZE}${unit}`;
@@ -238,15 +262,18 @@ const checkCollision = () => {
  */
 const gameLoop = () => {
     if(gameState === 0){
+        keysContainer.style.display = "none";
         container.style.display = "none";
         messages.style.display = "none";
         menu.style.display = "block";
     } else if (gameState >= 1 && gameState <= 5) {
+        keysContainer.style.display = "none";
         container.style.display = "none";
         messages.style.display = "flex";
         menu.style.display = "none";
         message.innerText = MESSAGES[`tutorial${gameState}`] || MESSAGES[gameState === 4 ? 'win' : 'lose'];
     } else {
+        keysContainer.style.display = "flex";
         container.style.display = "block";
         messages.style.display = "none";
         menu.style.display = "none";
@@ -255,6 +282,7 @@ const gameLoop = () => {
         const collidedMonster = checkCollision();
         if (collidedMonster) {
             gameState = collidedMonster.key ? 4 : 5;
+            keyCounting = collidedMonster.key ? keyCounting + 1 : 0;
         }
     }
     requestAnimationFrame(gameLoop);
@@ -321,6 +349,35 @@ const setupEventListeners = () => {
             case 'ArrowRight': keys.arrowRight = false; break;
             case 'Space': keys.space = false; break;
         }
+    });
+
+    // Listen to touch events
+    addEventListener("touchstart", (event) => {
+        let touch = event.touches[0];
+        touchStart.x = touch.clientX;
+        touchStart.y = touch.clientY;
+        touchActive = true;
+        touchDirection.x = 0;
+        touchDirection.y = 0;
+    });
+
+    // Listen and deal with touch movements
+    addEventListener("touchmove", (event) => {
+        if(!touchActive) return;
+        let touch = event.touches[0];
+        let dx = touch.clientX - touchStart.x;
+        let dy = touch.clientY - touchStart.y;
+
+        // Apply dead zone check
+        touchDirection.x = Math.abs(dx) > TOUCH_DEAD_ZONE ? Math.sign(dx) : 0;
+        touchDirection.y = Math.abs(dy) > TOUCH_DEAD_ZONE ? Math.sign(dy) : 0;
+    });
+
+    // Listen and reset direction values after touch release
+    addEventListener("touchend", () => {
+        touchDirection.x = 0;
+        touchDirection.y = 0;
+        touchActive = false;
     });
 }
 
