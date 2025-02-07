@@ -97,6 +97,7 @@ body{
 }
 
 #messages{
+    text-align: center;
     color: white;
     background-color: black;
     border: solid white 1px;

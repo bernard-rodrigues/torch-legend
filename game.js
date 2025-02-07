@@ -1,4 +1,12 @@
-import { HERO_POS_X_MAX_LIMIT, HERO_POS_Y_MAX_LIMIT, STEP, SAFE_START_DISTANCE, NEW_MONSTER_SPAWNING, RELATIVE_CHARACTER_SIZE } from './modules/constants.js';
+import {
+    HERO_POS_X_MAX_LIMIT,
+    HERO_POS_Y_MAX_LIMIT,
+    STEP,
+    SAFE_START_DISTANCE,
+    NEW_MONSTER_SPAWNING,
+    RELATIVE_CHARACTER_SIZE,
+    TOUCH_DEAD_ZONE
+} from './modules/constants.js';
 import { MESSAGES } from './modules/messages.js';
 import {animateTorch, RELATIVE_TORCH_SIZE} from './vfx/vfx.js';
 
@@ -52,6 +60,10 @@ let keys = {
     space: false
 };
 
+let touchStart = { x: 0, y: 0 };
+let touchDirection = { x: 0, y: 0 };
+let touchActive = false;
+
 // Arrays for storing monsters and their DOM elements
 let monsters = [];
 let monsterDivs = []
@@ -64,13 +76,13 @@ const moveCharacter = (keys) => {
     let dx = 0, dy = 0;
 
     // Determine movement direction
-    if (keys.keyW || keys.arrowUp) dy -= STEP;
-    if (keys.keyS || keys.arrowDown) dy += STEP;
-    if (keys.keyA || keys.arrowLeft){
+    if (keys.keyW || keys.arrowUp || touchDirection.y === -1) dy -= STEP;
+    if (keys.keyS || keys.arrowDown || touchDirection.y === 1) dy += STEP;
+    if (keys.keyA || keys.arrowLeft || touchDirection.x === -1){
         dx -= STEP;
         mainCharacter.style.transform = "translate(-50%, -50%) scaleX(-1)"
     }
-    if (keys.keyD || keys.arrowRight){
+    if (keys.keyD || keys.arrowRight || touchDirection.x === 1){
         dx += STEP;
         mainCharacter.style.transform = "translate(-50%, -50%) scaleX(1)"
     }
@@ -321,6 +333,32 @@ const setupEventListeners = () => {
             case 'ArrowRight': keys.arrowRight = false; break;
             case 'Space': keys.space = false; break;
         }
+    });
+
+    addEventListener("touchstart", (event) => {
+        let touch = event.touches[0];
+        touchStart.x = touch.clientX;
+        touchStart.y = touch.clientY;
+        touchActive = true;
+        touchDirection.x = 0;
+        touchDirection.y = 0;
+    });
+
+    addEventListener("touchmove", (event) => {
+        if(!touchActive) return;
+        let touch = event.touches[0];
+        let dx = touch.clientX - touchStart.x;
+        let dy = touch.clientY - touchStart.y;
+
+        // Apply dead zone check
+        touchDirection.x = Math.abs(dx) > TOUCH_DEAD_ZONE ? Math.sign(dx) : 0;
+        touchDirection.y = Math.abs(dy) > TOUCH_DEAD_ZONE ? Math.sign(dy) : 0;
+    });
+
+    addEventListener("touchend", () => {
+        touchDirection.x = 0;
+        touchDirection.y = 0;
+        touchActive = false;
     });
 }
 

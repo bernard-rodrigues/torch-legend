@@ -10,3 +10,5 @@ export const SAFE_START_DISTANCE = HERO_POS_X_MAX_LIMIT * 0.25;
 export const NEW_MONSTER_SPAWNING = 5;
 
 export const RELATIVE_CHARACTER_SIZE = 0.025; // Relative size of the main character
+
+export const TOUCH_DEAD_ZONE = 10; // Minimum distance before registering a direction
