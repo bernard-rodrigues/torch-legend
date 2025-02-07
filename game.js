@@ -14,6 +14,8 @@ import {animateTorch, RELATIVE_TORCH_SIZE} from './vfx/vfx.js';
  * Game DOM Elements
  */
 const menu = document.getElementById("menu");
+const keysContainer = document.getElementById("keys-container");
+const keyCounter = document.getElementById("key-counter");
 const container = document.getElementById("container");
 const mainCharacter = document.getElementById("main-character");
 const messages = document.getElementById("messages");
@@ -67,6 +69,9 @@ let touchActive = false;
 // Arrays for storing monsters and their DOM elements
 let monsters = [];
 let monsterDivs = []
+
+// Total of keys grabbed by the user
+let keyCounting = 0;
 
 /**
  * Moves the main character based on key inputs
@@ -162,6 +167,13 @@ const updateContainer = () => {
     container.style.transformOrigin = `${(heroPosition.x/HERO_POS_X_MAX_LIMIT)*100}% ${(heroPosition.y/HERO_POS_Y_MAX_LIMIT)*100}%`;
     container.style.transform = `scale(${zoom})`;
 
+    //
+    keysContainer.style.top = `${scale}${unit}`;
+    keysContainer.style.left = `${scale}${unit}`;
+    
+    // Update key counter
+    keyCounter.innerText = `x${keyCounting}`;
+
     // Update character position and size
     mainCharacter.style.height = `${containerHeight * RELATIVE_CHARACTER_SIZE}${unit}`;
     mainCharacter.style.top = `${heroPosition.y * scale + (containerHeight * RELATIVE_CHARACTER_SIZE)/2}${unit}`;
@@ -250,15 +262,18 @@ const checkCollision = () => {
  */
 const gameLoop = () => {
     if(gameState === 0){
+        keysContainer.style.display = "none";
         container.style.display = "none";
         messages.style.display = "none";
         menu.style.display = "block";
     } else if (gameState >= 1 && gameState <= 5) {
+        keysContainer.style.display = "none";
         container.style.display = "none";
         messages.style.display = "flex";
         menu.style.display = "none";
         message.innerText = MESSAGES[`tutorial${gameState}`] || MESSAGES[gameState === 4 ? 'win' : 'lose'];
     } else {
+        keysContainer.style.display = "flex";
         container.style.display = "block";
         messages.style.display = "none";
         menu.style.display = "none";
@@ -267,6 +282,7 @@ const gameLoop = () => {
         const collidedMonster = checkCollision();
         if (collidedMonster) {
             gameState = collidedMonster.key ? 4 : 5;
+            keyCounting = collidedMonster.key ? keyCounting + 1 : 0;
         }
     }
     requestAnimationFrame(gameLoop);
@@ -335,6 +351,7 @@ const setupEventListeners = () => {
         }
     });
 
+    // Listen to touch events
     addEventListener("touchstart", (event) => {
         let touch = event.touches[0];
         touchStart.x = touch.clientX;
@@ -344,6 +361,7 @@ const setupEventListeners = () => {
         touchDirection.y = 0;
     });
 
+    // Listen and deal with touch movements
     addEventListener("touchmove", (event) => {
         if(!touchActive) return;
         let touch = event.touches[0];
@@ -355,6 +373,7 @@ const setupEventListeners = () => {
         touchDirection.y = Math.abs(dy) > TOUCH_DEAD_ZONE ? Math.sign(dy) : 0;
     });
 
+    // Listen and reset direction values after touch release
     addEventListener("touchend", () => {
         touchDirection.x = 0;
         touchDirection.y = 0;
