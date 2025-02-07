@@ -96,6 +96,23 @@ body{
     background-size: cover;
 }
 
+#keys-container{
+    position: fixed;
+    background-color: white;
+    display: flex;
+    gap: 0.125rem;
+    height: 3vh;
+    width: fit-content;
+    padding: 0 0.125rem;
+    opacity: 0.5;
+}
+
+#key-counter{
+    color: black;
+    font-family: "Roboto", serif;
+    font-size: 0.625rem;
+}
+
 #messages{
     text-align: center;
     color: white;
