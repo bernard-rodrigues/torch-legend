@@ -73,6 +73,9 @@ let monsterDivs = []
 // Total of keys grabbed by the user
 let keyCounting = 0;
 
+// Stores the best scores
+let bestScore = 0;
+
 /**
  * Moves the main character based on key inputs
  * @param {Object} keys - Object containing key states
@@ -172,7 +175,7 @@ const updateContainer = () => {
     keysContainer.style.left = `${scale}${unit}`;
     
     // Update key counter
-    keyCounter.innerText = `x${keyCounting}`;
+    keyCounter.innerText = `x${keyCounting} - best: ${bestScore}`;
 
     // Update character position and size
     mainCharacter.style.height = `${containerHeight * RELATIVE_CHARACTER_SIZE}${unit}`;
@@ -281,8 +284,20 @@ const gameLoop = () => {
         updateContainer();
         const collidedMonster = checkCollision();
         if (collidedMonster) {
-            gameState = collidedMonster.key ? 4 : 5;
-            keyCounting = collidedMonster.key ? keyCounting + 1 : 0;
+            if(collidedMonster.key){
+                gameState = 4;
+                keyCounting += 1;
+                bestScore = keyCounting > bestScore ? keyCounting : bestScore;
+            }else{
+                gameState = 5;
+                const lastBestScore = localStorage.getItem("bestScore");
+                if(lastBestScore){
+                    localStorage.setItem("bestScore", bestScore > lastBestScore ? bestScore : lastBestScore);
+                }else{
+                    localStorage.setItem("bestScore", bestScore);
+                }
+                keyCounting = 0;
+            }
         }
     }
     requestAnimationFrame(gameLoop);
@@ -383,6 +398,8 @@ const setupEventListeners = () => {
 
 // Event listener for when the page is fully loaded
 document.addEventListener("DOMContentLoaded", () => {
+    bestScore = localStorage.getItem("bestScore") || 0;
+    
     requestAnimationFrame(gameLoop);
 
     // Animate the torch at a fixed interval of 100ms
