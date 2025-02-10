@@ -83,24 +83,27 @@ let bestScore = 0;
 const moveCharacter = (keys) => {
     let dx = 0, dy = 0;
 
-    // Determine movement direction
-    if (keys.keyW || keys.arrowUp || touchDirection.y === -1) dy -= STEP;
-    if (keys.keyS || keys.arrowDown || touchDirection.y === 1) dy += STEP;
-    if (keys.keyA || keys.arrowLeft || touchDirection.x === -1){
-        dx -= STEP;
-        mainCharacter.style.transform = "translate(-50%, -50%) scaleX(-1)"
-    }
-    if (keys.keyD || keys.arrowRight || touchDirection.x === 1){
-        dx += STEP;
-        mainCharacter.style.transform = "translate(-50%, -50%) scaleX(1)"
+    // Determine movement according to touch controls
+    if(touchDirection.x || touchDirection.y){
+        const magnitude = Math.sqrt(touchDirection.x**2 + touchDirection.y**2);
+        dx = (touchDirection.x/magnitude) * STEP;
+        dy = (touchDirection.y/magnitude) * STEP;
+    }else{
+        // Determine movement direction
+        if (keys.keyW || keys.arrowUp) dy -= STEP;
+        if (keys.keyS || keys.arrowDown) dy += STEP;
+        if (keys.keyA || keys.arrowLeft) dx -= STEP;
+        if (keys.keyD || keys.arrowRight) dx += STEP;
+    
+        // Normalize diagonal movement
+        if (dx !== 0 && dy !== 0) {
+            dx /= Math.sqrt(2);
+            dy /= Math.sqrt(2);
+        }
     }
 
-    // Normalize diagonal movement
-    if (dx !== 0 && dy !== 0) {
-        dx /= Math.sqrt(2);
-        dy /= Math.sqrt(2);
-    }
-
+    mainCharacter.style.transform = dx > 0 ? "translate(-50%, -50%) scaleX(1)" : "translate(-50%, -50%) scaleX(-1)";
+    
     // Keep character within bounds
     heroPosition.x = Math.max(0, Math.min(HERO_POS_X_MAX_LIMIT, heroPosition.x + dx));
     heroPosition.y = Math.max(0, Math.min(HERO_POS_Y_MAX_LIMIT, heroPosition.y + dy));
@@ -384,8 +387,8 @@ const setupEventListeners = () => {
         let dy = touch.clientY - touchStart.y;
 
         // Apply dead zone check
-        touchDirection.x = Math.abs(dx) > TOUCH_DEAD_ZONE ? Math.sign(dx) : 0;
-        touchDirection.y = Math.abs(dy) > TOUCH_DEAD_ZONE ? Math.sign(dy) : 0;
+        touchDirection.x = Math.abs(dx) > TOUCH_DEAD_ZONE ? dx : 0;
+        touchDirection.y = Math.abs(dy) > TOUCH_DEAD_ZONE ? dy : 0;
     });
 
     // Listen and reset direction values after touch release
